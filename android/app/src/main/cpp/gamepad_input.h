@@ -24,6 +24,11 @@ struct GuestPadState {
 class GamepadInput {
 public:
     enum Button : unsigned {A,B,X,Y,L1,R1,L2,R2,Start,Select,ThumbL,ThumbR,Up,Down,Left,Right,ButtonCount};
+    static void setStickDeadZone(float fraction){
+        const float dz=std::max(0.f,std::min(fraction,0.5f));
+        stickDeadZoneLow=dz;
+        stickDeadZoneHigh=std::min(0.5f,dz+0.15f);
+    }
     template<class SetKey>
     bool key(const AInputEvent* event,bool driving,SetKey&& setKey){
         int32_t code=AKeyEvent_getKeyCode(event),action=AKeyEvent_getAction(event);
@@ -43,11 +48,19 @@ public:
         auto axis=[&](int32_t which){return AMotionEvent_getAxisValue(event,which,0);};
         stickX_=axis(AMOTION_EVENT_AXIS_X);stickY_=axis(AMOTION_EVENT_AXIS_Y);
         hatX_=axis(AMOTION_EVENT_AXIS_HAT_X);hatY_=axis(AMOTION_EVENT_AXIS_HAT_Y);
-        // Android's standard right stick is Z/RZ.
+        // Android's standard right stick is Z/RZ; some handheld firmware uses RX/RY.
         rightX_=axis(AMOTION_EVENT_AXIS_Z);rightY_=axis(AMOTION_EVENT_AXIS_RZ);
+        if(std::fabs(rightX_)<0.01f&&std::fabs(rightY_)<0.01f){
+            rightX_=axis(AMOTION_EVENT_AXIS_RX);rightY_=axis(AMOTION_EVENT_AXIS_RY);
+        }
         // Pads report triggers as LTRIGGER/RTRIGGER, BRAKE/GAS or both.
         leftTrigger_=std::fmax(axis(AMOTION_EVENT_AXIS_LTRIGGER),axis(AMOTION_EVENT_AXIS_BRAKE));
         rightTrigger_=std::fmax(axis(AMOTION_EVENT_AXIS_RTRIGGER),axis(AMOTION_EVENT_AXIS_GAS));
+        static bool loggedTriggers=false;
+        if(!loggedTriggers&&(leftTrigger_>.3f||rightTrigger_>.3f)){
+            loggedTriggers=true;
+            __android_log_print(ANDROID_LOG_INFO,"NFSU2","Triggers L=%.2f R=%.2f (device %d)",leftTrigger_,rightTrigger_,AInputEvent_getDeviceId(event));
+        }
         apply(driving,setKey);return true;
     }
     // The game switched between menus and driving, or started/stopped reading
@@ -80,6 +93,7 @@ private:
     float stickX_=0,stickY_=0,rightX_=0,rightY_=0,hatX_=0,hatY_=0,leftTrigger_=0,rightTrigger_=0;
     std::array<bool,256> sent_{};
     bool driving_=false,emulate_=true,sentEmulation_=true;
+    static inline float stickDeadZoneLow=.25f,stickDeadZoneHigh=.4f;
 
     static int buttonFor(int32_t code){
         switch(code){
@@ -104,7 +118,7 @@ private:
     template<class SetKey> void apply(bool driving,SetKey& setKey){
         std::array<bool,256> want{};
         // Hysteresis keeps a stick resting near the threshold from chattering.
-        auto past=[&](float value,unsigned scan){return value>(sent_[scan]?.25f:.4f);};
+        auto past=[&](float value,unsigned scan){return value>(sent_[scan]?stickDeadZoneLow:stickDeadZoneHigh);};
         bool hatLeft=buttons_[Left]||hatX_<-.5f,hatRight=buttons_[Right]||hatX_>.5f;
         bool hatUp=buttons_[Up]||hatY_<-.5f,hatDown=buttons_[Down]||hatY_>.5f;
         if(driving){

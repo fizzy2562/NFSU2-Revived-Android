@@ -314,6 +314,12 @@ extern "C" JNIEXPORT jboolean JNICALL Java_io_mininxd_nfsu2_GameActivity_nativeD
 extern "C" JNIEXPORT void JNICALL Java_io_mininxd_nfsu2_GameActivity_nativePointer(JNIEnv*,jclass,jfloat x,jfloat y,jint phase){
     setGuestPointer(x,y,phase);
 }
+extern "C" JNIEXPORT void JNICALL Java_io_mininxd_nfsu2_GameActivity_nativeGamepadDeadzone(JNIEnv*,jclass,jfloat zone){
+    GamepadInput::setStickDeadZone(zone);
+}
+extern "C" JNIEXPORT void JNICALL Java_com_nfsu2_androidevolved_GameActivity_nativeGamepadDeadzone(JNIEnv*,jclass,jfloat zone){
+    GamepadInput::setStickDeadZone(zone);
+}
 extern "C" JNIEXPORT void JNICALL Java_io_mininxd_nfsu2_GameActivity_nativeTypeText(JNIEnv* env,jclass,jstring value,jboolean replace){
     if(!value)return;
     const jchar* chars=env->GetStringChars(value,nullptr);if(!chars)return;

@@ -80,7 +80,10 @@ void beginPaint(){
 void endPaint(){bool ok=arg(1)&&paintContexts.erase(read32(arg(1)));if(!ok)lastError=6;ret(ok,2);}
 uint32_t currentCursor{},activeWindow{};int32_t cursorVisibility{};
 void setCursor(){uint32_t old=currentCursor;currentCursor=arg(0);ret(old,1);}
-void showCursor(){cursorVisibility+=arg(0)?1:-1;ret(cursorVisibility,1);}
+void showCursor(){
+    if(inputPadConnected){ret(0,1);return;}
+    cursorVisibility+=arg(0)?1:-1;ret(cursorVisibility,1);
+}
 void getActiveWindow(){ret(activeWindow,0);}
 void setActiveWindow(){
     uint32_t handle=arg(0);if(handle&&!windows.count(handle)){lastError=1400;ret(0,1);return;}

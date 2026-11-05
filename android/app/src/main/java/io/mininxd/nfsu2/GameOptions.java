@@ -2,6 +2,7 @@ package io.mininxd.nfsu2;
 
 import android.content.Context;
 import android.content.SharedPreferences;
+import android.os.Build;
 
 /**
  * Launcher options. GameActivity reads them when the game process starts and hands them to the native
@@ -28,7 +29,61 @@ public final class GameOptions {
             STARTUP_MOVIES = "intro", CUTSCENE_BORDERS = "cutscene_borders",
             ROAM_CARS_LIMIT = "roam_max_cars", ROAM_CREW = "roam_crew",
             GRAPHICS_BACKEND = "graphics_backend", DRAW_DISTANCE = "draw_distance",
-            TRACKSIDE_CROWDS = "trackside_crowds", REGION = "region", SPEEDOMETER = "speedometer", PAD_LAYOUT = "pad_layout";
+            TRACKSIDE_CROWDS = "trackside_crowds", REGION = "region", SPEEDOMETER = "speedometer", PAD_LAYOUT = "pad_layout",
+            TOUCH_OVERLAY = "touch_overlay", PAD_DEADZONE = "pad_deadzone";
+
+    /** Retroid Pocket and similar built-in gamepad handhelds. */
+    public static boolean isRetroidHandheld(Context context) {
+        String manufacturer = Build.MANUFACTURER != null ? Build.MANUFACTURER.toLowerCase() : "";
+        String model = Build.MODEL != null ? Build.MODEL.toLowerCase() : "";
+        String product = Build.PRODUCT != null ? Build.PRODUCT.toLowerCase() : "";
+        String device = Build.DEVICE != null ? Build.DEVICE.toLowerCase() : "";
+        return manufacturer.contains("retroid") || model.contains("retroid") || product.contains("retroid")
+                || device.contains("retroid") || model.contains("pocket 5") || model.contains("pocket5");
+    }
+
+    static void ensureHandheldDefaults(Context context) {
+        if (!isRetroidHandheld(context)) return;
+        SharedPreferences p = prefs(context);
+        if (p.getBoolean("handheld_defaults_applied", false)) return;
+        p.edit()
+                .putString(TOUCH_OVERLAY, "off")
+                .putString(PAD_LAYOUT, "console")
+                .putBoolean("handheld_defaults_applied", true)
+                .apply();
+    }
+
+    static boolean isTouchOverlayEnabled(Context context) {
+        ensureHandheldDefaults(context);
+        String value = prefs(context).getString(TOUCH_OVERLAY, isRetroidHandheld(context) ? "off" : "on");
+        return "on".equals(value);
+    }
+
+    /** Stick dead zone as 0..1 fraction (launcher stores percent as string). */
+    static float padStickDeadZone(Context context) {
+        ensureHandheldDefaults(context);
+        String raw = prefs(context).getString(PAD_DEADZONE, "15");
+        try {
+            int percent = Integer.parseInt(raw);
+            if (percent < 0) percent = 0;
+            if (percent > 40) percent = 40;
+            return percent / 100f;
+        } catch (NumberFormatException ignored) {
+            return 0.15f;
+        }
+    }
+
+    static final Option[] HANDHELD = {
+            new Option(TOUCH_OVERLAY, "Touch overlay", "off",
+                    new String[] {"on", "off"},
+                    new String[] {"On · on-screen pedals and steering", "Off · physical gamepad only"}),
+            new Option(PAD_LAYOUT, "Gamepad layout", "console",
+                    new String[] {"port", "console"},
+                    new String[] {"Port · original mapping", "Console · PS2-style (X accept, O back, R3 camera)"}),
+            new Option(PAD_DEADZONE, "Stick dead zone", "15",
+                    new String[] {"5", "10", "15", "20", "25", "30"},
+                    new String[] {"5%", "10%", "15% · default", "20%", "25%", "30%"}),
+    };
 
     static final Option[] ALL = {
             new Option(GRAPHICS_BACKEND, "Graphics API", "auto",
@@ -83,6 +138,7 @@ public final class GameOptions {
     static Option find(String key) {
         if (key == null) return null;
         for (Option o : ALL) if (o.key.equals(key)) return o;
+        for (Option o : HANDHELD) if (o.key.equals(key)) return o;
         return null;
     }
 

@@ -417,12 +417,18 @@ public final class LauncherActivity extends Activity {
 
     private void refreshOptions() {
         optionsList.removeAllViews();
+        GameOptions.ensureHandheldDefaults(this);
         GpuDrivers.Driver driver = GpuDrivers.selected(this);
         // Custom drivers (libadrenotools) exist only in the 64-bit build.
         if (android.os.Process.is64Bit())
             optionsList.addView(optionRow("Vulkan Driver", driver == null ? "System default" : driver.name, this::chooseDriver));
         optionsList.addView(optionRow("Check driver", "GPU, graphics API & driver info", () -> probeDriver(false)));
         optionsList.addView(optionRow("Language", languageLabel(), this::chooseLanguage));
+        if (GameOptions.isRetroidHandheld(this)) {
+            optionsList.addView(sectionHeader("Retroid / handheld controller"));
+            for (GameOptions.Option option : GameOptions.HANDHELD)
+                optionsList.addView(optionRow(option.title, option.label(GameOptions.get(this, option.key)), () -> chooseOption(option)));
+        }
         for (GameOptions.Option option : GameOptions.ALL)
             optionsList.addView(optionRow(option.title, option.label(GameOptions.get(this, option.key)), () -> chooseOption(option)));
         optionsList.addView(optionRow("Cheat Codes", cheatCodesSummary(), this::chooseCheatCodes));
@@ -923,6 +929,8 @@ public final class LauncherActivity extends Activity {
                 .putExtra("region", GameOptions.regionCode(this))
                 .putExtra("speedometer", GameOptions.speedometerPosition(this))
                 .putExtra("consolePad", GameOptions.get(this, GameOptions.PAD_LAYOUT).equals("console"))
+                .putExtra("touchOverlay", GameOptions.isTouchOverlayEnabled(this))
+                .putExtra("padDeadZone", GameOptions.padStickDeadZone(this))
                 .putExtra("onlineServer", GameOptions.onlineServer(this))
                 .putExtra("driverLoader", loader)
                 .putExtra("graphicsBackend", GameOptions.getEffectiveGraphicsBackend(this))
@@ -973,6 +981,12 @@ public final class LauncherActivity extends Activity {
                 ok ? COLOR_OK : required ? COLOR_ERR : COLOR_WARN, false);
         row.setPadding(0, dp(2), 0, dp(2));
         checksList.addView(row);
+    }
+
+    private View sectionHeader(String title) {
+        TextView header = label(title, 13, ACCENT, true);
+        header.setPadding(dp(4), dp(14), dp(4), dp(4));
+        return header;
     }
 
     private View optionRow(String title, String value, Runnable onClick) {
