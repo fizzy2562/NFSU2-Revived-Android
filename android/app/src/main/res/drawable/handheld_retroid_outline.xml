@@ -1,56 +1,62 @@
 <?xml version="1.0" encoding="utf-8"?>
+<!-- Retroid Pocket 5 landscape schematic (controls + screen bezel). Viewport 720×340. -->
 <vector xmlns:android="http://schemas.android.com/apk/res/android"
-    android:width="400dp"
-    android:height="220dp"
-    android:viewportWidth="400"
-    android:viewportHeight="220">
-    <!-- Pocket 5 shell -->
+    android:width="720dp"
+    android:height="340dp"
+    android:viewportWidth="720"
+    android:viewportHeight="340">
+    <!-- Device shell -->
     <path
-        android:fillColor="#1E242C"
-        android:pathData="M48,24 h304 a28,28 0 0 1 28,28 v116 a28,28 0 0 1 -28,28 h-304 a28,28 0 0 1 -28,-28 v-116 a28,28 0 0 1 28,-28 z" />
+        android:fillColor="#2B3038"
+        android:pathData="M24,48 h672 a32,32 0 0 1 32,32 v180 a32,32 0 0 1 -32,32 h-672 a32,32 0 0 1 -32,-32 v-180 a32,32 0 0 1 32,-32 z" />
     <path
-        android:fillColor="#2A3340"
-        android:pathData="M68,40 h264 a12,12 0 0 1 12,12 v84 a12,12 0 0 1 -12,12 h-264 a12,12 0 0 1 -12,-12 v-84 a12,12 0 0 1 12,-12 z" />
-    <!-- Sticks -->
+        android:fillColor="#1A1E24"
+        android:pathData="M40,64 h640 a16,16 0 0 1 16,16 v148 a16,16 0 0 1 -16,16 h-640 a16,16 0 0 1 -16,-16 v-148 a16,16 0 0 1 16,-16 z" />
+    <!-- Screen + bezel -->
     <path
-        android:fillColor="#3D4654"
-        android:strokeColor="#5A6578"
+        android:fillColor="#0D0F12"
+        android:pathData="M168,78 h384 a10,10 0 0 1 10,10 v112 a10,10 0 0 1 -10,10 h-384 a10,10 0 0 1 -10,-10 v-112 a10,10 0 0 1 10,-10 z" />
+    <path
+        android:fillColor="#151920"
+        android:pathData="M160,70 h400 a14,14 0 0 1 14,14 v128 a14,14 0 0 1 -14,14 h-400 a14,14 0 0 1 -14,-14 v-128 a14,14 0 0 1 14,-14 z" />
+    <!-- L2 / R2 shoulders -->
+    <path
+        android:fillColor="#454C57"
+        android:pathData="M56,52 L168,52 L148,78 L76,78 Z" />
+    <path
+        android:fillColor="#454C57"
+        android:pathData="M552,52 L664,52 L644,78 L572,78 Z" />
+    <!-- Left stick -->
+    <path
+        android:fillColor="#3A424E"
+        android:strokeColor="#6B7280"
         android:strokeWidth="2"
-        android:pathData="M108,72 m-26,0 a26,26 0 1,1 52,0 a26,26 0 1,1 -52,0" />
+        android:pathData="M118,168 m-34,0 a34,34 0 1,1 68,0 a34,34 0 1,1 -68,0" />
     <path
-        android:fillColor="#3D4654"
-        android:strokeColor="#5A6578"
+        android:fillColor="#2F3640"
+        android:pathData="M118,168 m-18,0 a18,18 0 1,1 36,0 a18,18 0 1,1 -36,0" />
+    <!-- D-pad (left lower) -->
+    <path android:fillColor="#4B5563" android:pathData="M118,248 h22 v22 h-22 z" />
+    <path android:fillColor="#4B5563" android:pathData="M107,259 h44 v-12 h-44 z" />
+    <!-- Right stick -->
+    <path
+        android:fillColor="#3A424E"
+        android:strokeColor="#6B7280"
         android:strokeWidth="2"
-        android:pathData="M292,72 m-26,0 a26,26 0 1,1 52,0 a26,26 0 1,1 -52,0" />
-    <!-- L2 / R2 -->
+        android:pathData="M602,168 m-34,0 a34,34 0 1,1 68,0 a34,34 0 1,1 -68,0" />
     <path
-        android:fillColor="#4A5568"
-        android:pathData="M72,36 h56 v14 h-56 z" />
-    <path
-        android:fillColor="#4A5568"
-        android:pathData="M272,36 h56 v14 h-56 z" />
-    <!-- Start / Select -->
+        android:fillColor="#2F3640"
+        android:pathData="M602,168 m-18,0 a18,18 0 1,1 36,0 a18,18 0 1,1 -36,0" />
+    <!-- ABXY (Nintendo-style diamond, Retroid Android layout) -->
+    <path android:fillColor="#3B82F6" android:pathData="M602,248 m-16,0 a16,16 0 1,1 32,0 a16,16 0 1,1 -32,0" />
+    <path android:fillColor="#EAB308" android:pathData="M602,208 m-16,0 a16,16 0 1,1 32,0 a16,16 0 1,1 -32,0" />
+    <path android:fillColor="#EF4444" android:pathData="M642,248 m-16,0 a16,16 0 1,1 32,0 a16,16 0 1,1 -32,0" />
+    <path android:fillColor="#22C55E" android:pathData="M602,288 m-16,0 a16,16 0 1,1 32,0 a16,16 0 1,1 -32,0" />
+    <!-- Start / Select (small, under screen) -->
     <path
         android:fillColor="#6B7280"
-        android:pathData="M168,52 m-10,0 a10,10 0 1,1 20,0 a10,10 0 1,1 -20,0" />
+        android:pathData="M318,228 h36 a8,8 0 0 1 8,8 v12 a8,8 0 0 1 -8,8 h-36 a8,8 0 0 1 -8,-8 v-12 a8,8 0 0 1 8,-8 z" />
     <path
         android:fillColor="#6B7280"
-        android:pathData="M232,52 m-10,0 a10,10 0 1,1 20,0 a10,10 0 1,1 -20,0" />
-    <!-- Face: X left, Y top, B right, A bottom (Xbox-style) -->
-    <path
-        android:fillColor="#3B82F6"
-        android:pathData="M288,118 m-14,0 a14,14 0 1,1 28,0 a14,14 0 1,1 -28,0" />
-    <path
-        android:fillColor="#EAB308"
-        android:pathData="M312,94 m-14,0 a14,14 0 1,1 28,0 a14,14 0 1,1 -28,0" />
-    <path
-        android:fillColor="#EF4444"
-        android:pathData="M336,118 m-14,0 a14,14 0 1,1 28,0 a14,14 0 1,1 -28,0" />
-    <path
-        android:fillColor="#22C55E"
-        android:pathData="M312,142 m-14,0 a14,14 0 1,1 28,0 a14,14 0 1,1 -28,0" />
-    <!-- D-pad hint (left) -->
-    <path
-        android:fillColor="#374151"
-        android:pathData="M88,118 h16 v16 h-16 z M80,126 h32 v-8 h-32 z" />
+        android:pathData="M366,228 h36 a8,8 0 0 1 8,8 v12 a8,8 0 0 1 -8,8 h-36 a8,8 0 0 1 -8,-8 v-12 a8,8 0 0 1 8,-8 z" />
 </vector>
