@@ -73,21 +73,17 @@ public final class HandheldGamepadBridge extends View {
     public boolean onGenericMotionEvent(MotionEvent event) {
         if (!isGamepadSource(event.getSource())) return super.onGenericMotionEvent(event);
         if (event.getAction() != MotionEvent.ACTION_MOVE) return true;
+        boolean driving = sink.drivingControls();
         float steer = HandheldBindings.steerX(event);
         float lt = HandheldBindings.leftTrigger(event);
         float rt = HandheldBindings.rightTrigger(event);
-        boolean driving = sink.drivingControls();
-        if (driving) {
-            setScan(HandheldGameAction.STEER_LEFT.defaultScan, steer < -deadZone);
-            setScan(HandheldGameAction.STEER_RIGHT.defaultScan, steer > deadZone);
-            setScan(HandheldGameAction.BRAKE.defaultScan, lt > deadZone);
-            setScan(HandheldGameAction.GAS.defaultScan, rt > deadZone);
-        } else {
-            setScan(HandheldGameAction.DPAD_LEFT.defaultScan, steer < -deadZone);
-            setScan(HandheldGameAction.DPAD_RIGHT.defaultScan, steer > deadZone);
-            setScan(HandheldGameAction.DPAD_UP.defaultScan, HandheldBindings.axisValue(event, MotionEvent.AXIS_Y) < -deadZone);
-            setScan(HandheldGameAction.DPAD_DOWN.defaultScan, HandheldBindings.axisValue(event, MotionEvent.AXIS_Y) > deadZone);
-        }
+
+        applySteer(steer, driving);
+        applyAxisAction(event, HandheldGameAction.GAS, driving);
+        applyAxisAction(event, HandheldGameAction.BRAKE, driving);
+        applyAxisAction(event, HandheldGameAction.NITRO, driving);
+        applyAxisAction(event, HandheldGameAction.HANDBRAKE, driving);
+
         if (lt > deadZone || rt > deadZone) {
             if (!loggedTriggers) {
                 loggedTriggers = true;
@@ -95,6 +91,25 @@ public final class HandheldGamepadBridge extends View {
             }
         }
         return true;
+    }
+
+    private void applySteer(float steer, boolean driving) {
+        int bind = HandheldBindings.bindingFor(getContext(), HandheldGameAction.STEER_LEFT);
+        if (bind != HandheldBindings.AXIS_STEER_X) return;
+        if (driving) {
+            setScan(HandheldGameAction.STEER_LEFT.defaultScan, steer < -deadZone);
+            setScan(HandheldGameAction.STEER_RIGHT.defaultScan, steer > deadZone);
+        } else {
+            setScan(HandheldGameAction.DPAD_LEFT.defaultScan, steer < -deadZone);
+            setScan(HandheldGameAction.DPAD_RIGHT.defaultScan, steer > deadZone);
+        }
+    }
+
+    private void applyAxisAction(MotionEvent event, HandheldGameAction action, boolean driving) {
+        int bind = HandheldBindings.bindingFor(getContext(), action);
+        if (bind != HandheldBindings.AXIS_LTRIGGER && bind != HandheldBindings.AXIS_RTRIGGER) return;
+        float value = HandheldBindings.axisValueForBinding(event, bind);
+        setScan(scanFor(action, driving), value > deadZone);
     }
 
     private boolean handleButton(int keyCode, boolean down) {

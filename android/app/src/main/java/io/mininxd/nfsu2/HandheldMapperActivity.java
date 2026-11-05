@@ -39,8 +39,8 @@ public final class HandheldMapperActivity extends Activity {
         root.addView(title);
 
         TextView help = new TextView(this);
-        help.setText("Retroid Pocket 5 · Tap an action, then press the physical button or trigger to assign. "
-                + "Sticks use axis bindings (defaults: left stick steer, L2/R2 brake/gas).");
+        help.setText("Retroid Pocket 5 · Green A = brake, Red B = gas, L2 = nitro, R2 = handbrake, "
+                + "Start / Select = small center buttons. Tap a row, then press a control to rebind.");
         help.setTextColor(Color.LTGRAY);
         help.setPadding(0, 12, 0, 16);
         root.addView(help);

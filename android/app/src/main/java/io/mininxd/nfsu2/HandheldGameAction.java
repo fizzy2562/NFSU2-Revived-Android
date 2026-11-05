@@ -13,6 +13,7 @@ public enum HandheldGameAction {
     SHIFT_UP(0x2a),
     SHIFT_DOWN(0x1d),
     PAUSE(0x01),
+    SELECT(0x01),
     CONFIRM(0x1c),
     BACK(0x01),
     DPAD_UP(0xc8),

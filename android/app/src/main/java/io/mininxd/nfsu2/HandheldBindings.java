@@ -17,8 +17,11 @@ public final class HandheldBindings {
     static final int AXIS_LTRIGGER = -101;
     static final int AXIS_RTRIGGER = -102;
 
+    /** Bump when default Retroid preset changes (forces remap for existing installs). */
+    private static final int PRESET_VERSION = 2;
     private static final String PREFS = "handheld_bindings";
     private static final String KEY_JSON = "map_v1";
+    private static final String KEY_PRESET = "binding_preset_version";
 
     private HandheldBindings() {}
 
@@ -27,24 +30,29 @@ public final class HandheldBindings {
     }
 
     static void ensureDefaults(Context context) {
-        if (prefs(context).contains(KEY_JSON)) return;
-        resetDefaults(context);
+        int preset = prefs(context).getInt(KEY_PRESET, 0);
+        if (!prefs(context).contains(KEY_JSON) || preset < PRESET_VERSION) {
+            resetDefaults(context);
+            prefs(context).edit().putInt(KEY_PRESET, PRESET_VERSION).apply();
+        }
     }
 
+    /** Retroid Pocket 5 default: B=gas, A=brake, L2=nitro, R2=handbrake, Start/Select system buttons. */
     static void resetDefaults(Context context) {
         try {
             JSONObject o = new JSONObject();
-            o.put(HandheldGameAction.GAS.name(), AXIS_RTRIGGER);
-            o.put(HandheldGameAction.BRAKE.name(), AXIS_LTRIGGER);
+            o.put(HandheldGameAction.GAS.name(), KeyEvent.KEYCODE_BUTTON_B);
+            o.put(HandheldGameAction.BRAKE.name(), KeyEvent.KEYCODE_BUTTON_A);
+            o.put(HandheldGameAction.NITRO.name(), AXIS_LTRIGGER);
+            o.put(HandheldGameAction.HANDBRAKE.name(), AXIS_RTRIGGER);
             o.put(HandheldGameAction.STEER_LEFT.name(), AXIS_STEER_X);
             o.put(HandheldGameAction.STEER_RIGHT.name(), AXIS_STEER_X);
-            o.put(HandheldGameAction.HANDBRAKE.name(), KeyEvent.KEYCODE_BUTTON_A);
-            o.put(HandheldGameAction.NITRO.name(), KeyEvent.KEYCODE_BUTTON_B);
+            o.put(HandheldGameAction.PAUSE.name(), KeyEvent.KEYCODE_BUTTON_START);
+            o.put(HandheldGameAction.SELECT.name(), KeyEvent.KEYCODE_BUTTON_SELECT);
             o.put(HandheldGameAction.CAMERA.name(), KeyEvent.KEYCODE_BUTTON_X);
             o.put(HandheldGameAction.LOOK_BACK.name(), KeyEvent.KEYCODE_BUTTON_Y);
             o.put(HandheldGameAction.SHIFT_UP.name(), KeyEvent.KEYCODE_BUTTON_R1);
             o.put(HandheldGameAction.SHIFT_DOWN.name(), KeyEvent.KEYCODE_BUTTON_L1);
-            o.put(HandheldGameAction.PAUSE.name(), KeyEvent.KEYCODE_BUTTON_START);
             o.put(HandheldGameAction.CONFIRM.name(), KeyEvent.KEYCODE_BUTTON_A);
             o.put(HandheldGameAction.BACK.name(), KeyEvent.KEYCODE_BUTTON_B);
             o.put(HandheldGameAction.DPAD_UP.name(), KeyEvent.KEYCODE_DPAD_UP);
@@ -84,19 +92,27 @@ public final class HandheldBindings {
         return KeyEvent.keyCodeToString(code).replace("KEYCODE_", "");
     }
 
+    static float axisValueForBinding(MotionEvent event, int binding) {
+        if (binding == AXIS_LTRIGGER) return leftTrigger(event);
+        if (binding == AXIS_RTRIGGER) return rightTrigger(event);
+        if (binding == AXIS_STEER_X) return steerX(event);
+        return 0f;
+    }
+
     private static int defaultBinding(HandheldGameAction action) {
         switch (action) {
-            case GAS: return AXIS_RTRIGGER;
-            case BRAKE: return AXIS_LTRIGGER;
+            case GAS: return KeyEvent.KEYCODE_BUTTON_B;
+            case BRAKE: return KeyEvent.KEYCODE_BUTTON_A;
+            case NITRO: return AXIS_LTRIGGER;
+            case HANDBRAKE: return AXIS_RTRIGGER;
             case STEER_LEFT:
             case STEER_RIGHT: return AXIS_STEER_X;
-            case HANDBRAKE: return KeyEvent.KEYCODE_BUTTON_A;
-            case NITRO: return KeyEvent.KEYCODE_BUTTON_B;
+            case PAUSE: return KeyEvent.KEYCODE_BUTTON_START;
+            case SELECT: return KeyEvent.KEYCODE_BUTTON_SELECT;
             case CAMERA: return KeyEvent.KEYCODE_BUTTON_X;
             case LOOK_BACK: return KeyEvent.KEYCODE_BUTTON_Y;
             case SHIFT_UP: return KeyEvent.KEYCODE_BUTTON_R1;
             case SHIFT_DOWN: return KeyEvent.KEYCODE_BUTTON_L1;
-            case PAUSE: return KeyEvent.KEYCODE_BUTTON_START;
             case CONFIRM: return KeyEvent.KEYCODE_BUTTON_A;
             case BACK: return KeyEvent.KEYCODE_BUTTON_B;
             case DPAD_UP: return KeyEvent.KEYCODE_DPAD_UP;

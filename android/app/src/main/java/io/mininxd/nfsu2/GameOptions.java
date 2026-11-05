@@ -50,6 +50,7 @@ public final class GameOptions {
 
     static void ensureHandheldDefaults(Context context) {
         if (!isRetroidHandheld(context)) return;
+        HandheldBindings.ensureDefaults(context);
         SharedPreferences p = prefs(context);
         if (p.getBoolean("handheld_defaults_applied", false)) return;
         p.edit()

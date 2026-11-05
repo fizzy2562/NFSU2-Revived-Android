@@ -439,13 +439,6 @@ public final class LauncherActivity extends Activity {
             optionsList.addView(optionRow("Vulkan Driver", driver == null ? "System default" : driver.name, this::chooseDriver));
         optionsList.addView(optionRow("Check driver", "GPU, graphics API & driver info", () -> probeDriver(false)));
         optionsList.addView(optionRow("Language", languageLabel(), this::chooseLanguage));
-        if (GameOptions.isRetroidHandheld(this)) {
-            optionsList.addView(sectionHeader("Retroid / handheld controller"));
-            for (GameOptions.Option option : GameOptions.HANDHELD)
-                optionsList.addView(optionRow(option.title, option.label(GameOptions.get(this, option.key)), () -> chooseOption(option)));
-            optionsList.addView(optionRow("Handheld button layout", "Map physical controls", () ->
-                    startActivity(new android.content.Intent(this, HandheldMapperActivity.class))));
-        }
         for (GameOptions.Option option : GameOptions.ALL)
             optionsList.addView(optionRow(option.title, option.label(GameOptions.get(this, option.key)), () -> chooseOption(option)));
         optionsList.addView(optionRow("Cheat Codes", cheatCodesSummary(), this::chooseCheatCodes));
@@ -459,6 +452,13 @@ public final class LauncherActivity extends Activity {
         optionsList.addView(optionRow("Check for updates",
                 checkingUpdates ? "Checking GitHub…" : "Version " + ReleaseUpdates.installed(this), () -> checkUpdates(true)));
         optionsList.addView(optionRow("Report an issue", "Report on GitHub / Save ZIP", () -> showReportDialog(null)));
+        if (GameOptions.isRetroidHandheld(this)) {
+            optionsList.addView(sectionHeader("Retroid / handheld controller"));
+            for (GameOptions.Option option : GameOptions.HANDHELD)
+                optionsList.addView(optionRow(option.title, option.label(GameOptions.get(this, option.key)), () -> chooseOption(option)));
+            optionsList.addView(optionRow("Handheld button layout", "Map physical controls", () ->
+                    startActivity(new android.content.Intent(this, HandheldMapperActivity.class))));
+        }
     }
 
     private String serverStatusSummary() {
