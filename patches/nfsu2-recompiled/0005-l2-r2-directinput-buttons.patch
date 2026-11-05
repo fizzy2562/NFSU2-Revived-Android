@@ -1,0 +1,38 @@
+diff --git a/android/app/src/main/cpp/gamepad_input.h b/android/app/src/main/cpp/gamepad_input.h
+index 560b9ff..a1b2c3d 100644
+--- a/android/app/src/main/cpp/gamepad_input.h
++++ b/android/app/src/main/cpp/gamepad_input.h
+@@ -54,8 +54,11 @@ public:
+         state.leftTrigger=std::fmax(leftTrigger_,buttons_[L2]?1.f:0.f);
+         state.rightTrigger=std::fmax(rightTrigger_,buttons_[R2]?1.f:0.f);
+         // Console layout: the game's joystick keeps only the sticks and triggers
+         // (analog steering and throttle); every button reaches it as a key instead.
++        // Hall/analog L2/R2 still map to DirectInput buttons 10/11 so the in-game
++        // joypad configurator can bind shift up/down (and other actions) to triggers.
++        if(state.leftTrigger>=0.5f)state.buttons|=1u<<10;
++        if(state.rightTrigger>=0.5f)state.buttons|=1u<<11;
+         if(console_)return state;
+         static constexpr Button order[]={A,B,X,Y,L1,R1,Select,Start,ThumbL,ThumbR};
+         for(unsigned i=0;i<10;++i)if(buttons_[order[i]])state.buttons|=1u<<i;
+diff --git a/android/app/src/main/cpp/guest_input.inc b/android/app/src/main/cpp/guest_input.inc
+index 01f9215..b2c3d4e 100644
+--- a/android/app/src/main/cpp/guest_input.inc
++++ b/android/app/src/main/cpp/guest_input.inc
+@@ -197,7 +197,7 @@ const PadObject padObjects[]={
+     {0xa36d02f0u,55,0x0004u|(7u<<8),0,"Start"},{0xa36d02f0u,56,0x0004u|(8u<<8),0,"L3"},
+     {0xa36d02f0u,57,0x0004u|(9u<<8),0,"R3"},
+-    {0xa36d02f0u,58,0x0004u|(10u<<8),0,"Button 10"},{0xa36d02f0u,59,0x0004u|(11u<<8),0,"Button 11"},
++    {0xa36d02f0u,58,0x0004u|(10u<<8),0,"L2"},{0xa36d02f0u,59,0x0004u|(11u<<8),0,"R2"},
+ };
+ bool joystickMethod(InputObject& object,uint32_t self,uint32_t method){
+     auto fillObject=[&](uint32_t output,const PadObject& entry){
+@@ -254,7 +254,8 @@ bool joystickMethod(InputObject& object,uint32_t self,uint32_t method){
+         write32(output+20,entry.offset);write32(output+24,entry.type);write32(output+28,entry.flags);
+         // Buttons 0..9 are A, B, X, Y, L1, R1, Select, Start, L3, R3 (gamepad_input.h).
+-        static const char* const playStation[]={"Cross","Circle","Square","Triangle","L1","R1","Select","Start","L3","R3"};
++        static const char* const playStation[]={"Cross","Circle","Square","Triangle","L1","R1","Select","Start","L3","R3",
++            "L2","R2","Button 12","Button 13","Button 14","Button 15"};
+         const char* name=entry.name;uint32_t button=(entry.type>>8)&0xffff;
+-        if((entry.type&0x04u)&&button<std::size(playStation)&&padPlayStationNames.load(std::memory_order_relaxed))name=playStation[button];
++        if((entry.type&0x04u)&&button<std::size(playStation)&&padPlayStationNames.load(std::memory_order_relaxed))name=playStation[button];
+         std::memcpy(ptr(output+32,std::strlen(name)+1),name,std::strlen(name)+1);
