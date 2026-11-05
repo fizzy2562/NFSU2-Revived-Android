@@ -38,8 +38,14 @@ public final class GameOptions {
         String model = Build.MODEL != null ? Build.MODEL.toLowerCase() : "";
         String product = Build.PRODUCT != null ? Build.PRODUCT.toLowerCase() : "";
         String device = Build.DEVICE != null ? Build.DEVICE.toLowerCase() : "";
-        return manufacturer.contains("retroid") || model.contains("retroid") || product.contains("retroid")
+        return manufacturer.contains("retroid") || manufacturer.contains("moorechip")
+                || model.contains("retroid") || product.contains("retroid")
                 || device.contains("retroid") || model.contains("pocket 5") || model.contains("pocket5");
+    }
+
+    /** Route gamepad through Java keyboard emulation (Retroid Pocket DirectInput dead-input workaround). */
+    static boolean useJavaHandheldGamepad(Context context) {
+        return isRetroidHandheld(context);
     }
 
     static void ensureHandheldDefaults(Context context) {

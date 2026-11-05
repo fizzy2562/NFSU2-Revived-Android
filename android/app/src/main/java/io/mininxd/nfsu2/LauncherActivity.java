@@ -86,6 +86,21 @@ public final class LauncherActivity extends Activity {
         checkUpdates(false);
         String updated = ReleaseUpdates.pendingWhatsNew(this);
         if (updated != null) showWhatsNew(updated);
+        maybeOfferHandheldMapper();
+    }
+
+    private void maybeOfferHandheldMapper() {
+        if (!GameOptions.isRetroidHandheld(this)) return;
+        GameOptions.ensureHandheldDefaults(this);
+        if (GameOptions.prefs(this).getBoolean("handheld_mapper_shown", false)) return;
+        new AlertDialog.Builder(this, android.R.style.Theme_DeviceDefault_Dialog_Alert)
+                .setTitle("Retroid controller layout")
+                .setMessage("Map your Pocket 5 buttons before playing. You can reopen this anytime under "
+                        + "Retroid / handheld controller → Handheld button layout.")
+                .setPositiveButton("Open mapper", (d, w) ->
+                        startActivity(new android.content.Intent(this, HandheldMapperActivity.class)))
+                .setNegativeButton("Later", null)
+                .show();
     }
 
     /** First launch after an update: the installed version's release notes from GitHub. */
@@ -428,6 +443,8 @@ public final class LauncherActivity extends Activity {
             optionsList.addView(sectionHeader("Retroid / handheld controller"));
             for (GameOptions.Option option : GameOptions.HANDHELD)
                 optionsList.addView(optionRow(option.title, option.label(GameOptions.get(this, option.key)), () -> chooseOption(option)));
+            optionsList.addView(optionRow("Handheld button layout", "Map physical controls", () ->
+                    startActivity(new android.content.Intent(this, HandheldMapperActivity.class))));
         }
         for (GameOptions.Option option : GameOptions.ALL)
             optionsList.addView(optionRow(option.title, option.label(GameOptions.get(this, option.key)), () -> chooseOption(option)));

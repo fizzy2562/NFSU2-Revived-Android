@@ -13,6 +13,8 @@
         </activity>
         <activity android:name=".GpuProbeActivity" android:exported="false"
             android:process=":gpu_probe" android:screenOrientation="sensorLandscape" />
+        <activity android:name=".HandheldMapperActivity" android:exported="false"
+            android:screenOrientation="sensorLandscape" android:theme="@android:style/Theme.DeviceDefault.NoActionBar.Fullscreen" />
         <activity android:name=".LauncherActivity" android:exported="true" android:screenOrientation="sensorLandscape"
             android:theme="@android:style/Theme.DeviceDefault.NoActionBar.Fullscreen">
             <intent-filter>
