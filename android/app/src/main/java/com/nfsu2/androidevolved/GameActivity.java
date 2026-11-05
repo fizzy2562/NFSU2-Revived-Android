@@ -27,6 +27,5 @@ public final class GameActivity {
     public static native void nativeRegion(int region);
     public static native void nativeSpeedometerPosition(int position);
     public static native void nativeGamepadLayout(boolean console);
-    public static native void nativeGamepadDeadzone(float zone);
     public static native void nativeGpuDriver(String hooks, String temp, String directory, String library);
 }

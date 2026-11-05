@@ -86,21 +86,6 @@ public final class LauncherActivity extends Activity {
         checkUpdates(false);
         String updated = ReleaseUpdates.pendingWhatsNew(this);
         if (updated != null) showWhatsNew(updated);
-        maybeOfferHandheldMapper();
-    }
-
-    private void maybeOfferHandheldMapper() {
-        if (!GameOptions.isRetroidHandheld(this)) return;
-        GameOptions.ensureHandheldDefaults(this);
-        if (GameOptions.prefs(this).getBoolean("handheld_mapper_shown", false)) return;
-        new AlertDialog.Builder(this, android.R.style.Theme_DeviceDefault_Dialog_Alert)
-                .setTitle("Retroid controller layout")
-                .setMessage("Map your Pocket 5 buttons before playing. You can reopen this anytime under "
-                        + "Retroid / handheld controller → Handheld button layout.")
-                .setPositiveButton("Open mapper", (d, w) ->
-                        startActivity(new android.content.Intent(this, HandheldMapperActivity.class)))
-                .setNegativeButton("Later", null)
-                .show();
     }
 
     /** First launch after an update: the installed version's release notes from GitHub. */
@@ -432,7 +417,6 @@ public final class LauncherActivity extends Activity {
 
     private void refreshOptions() {
         optionsList.removeAllViews();
-        GameOptions.ensureHandheldDefaults(this);
         GpuDrivers.Driver driver = GpuDrivers.selected(this);
         // Custom drivers (libadrenotools) exist only in the 64-bit build.
         if (android.os.Process.is64Bit())
@@ -452,13 +436,6 @@ public final class LauncherActivity extends Activity {
         optionsList.addView(optionRow("Check for updates",
                 checkingUpdates ? "Checking GitHub…" : "Version " + ReleaseUpdates.installed(this), () -> checkUpdates(true)));
         optionsList.addView(optionRow("Report an issue", "Report on GitHub / Save ZIP", () -> showReportDialog(null)));
-        if (GameOptions.isRetroidHandheld(this)) {
-            optionsList.addView(sectionHeader("Retroid / handheld controller"));
-            for (GameOptions.Option option : GameOptions.HANDHELD)
-                optionsList.addView(optionRow(option.title, option.label(GameOptions.get(this, option.key)), () -> chooseOption(option)));
-            optionsList.addView(optionRow("Handheld button layout", "Map physical controls", () ->
-                    startActivity(new android.content.Intent(this, HandheldMapperActivity.class))));
-        }
     }
 
     private String serverStatusSummary() {
@@ -947,7 +924,6 @@ public final class LauncherActivity extends Activity {
                 .putExtra("speedometer", GameOptions.speedometerPosition(this))
                 .putExtra("consolePad", GameOptions.get(this, GameOptions.PAD_LAYOUT).equals("console"))
                 .putExtra("touchOverlay", GameOptions.isTouchOverlayEnabled(this))
-                .putExtra("padDeadZone", GameOptions.padStickDeadZone(this))
                 .putExtra("onlineServer", GameOptions.onlineServer(this))
                 .putExtra("driverLoader", loader)
                 .putExtra("graphicsBackend", GameOptions.getEffectiveGraphicsBackend(this))
@@ -998,12 +974,6 @@ public final class LauncherActivity extends Activity {
                 ok ? COLOR_OK : required ? COLOR_ERR : COLOR_WARN, false);
         row.setPadding(0, dp(2), 0, dp(2));
         checksList.addView(row);
-    }
-
-    private View sectionHeader(String title) {
-        TextView header = label(title, 13, ACCENT, true);
-        header.setPadding(dp(4), dp(14), dp(4), dp(4));
-        return header;
     }
 
     private View optionRow(String title, String value, Runnable onClick) {

@@ -70,7 +70,6 @@ final class RacingControlsView extends View {
     private boolean editing;
     private boolean hiddenByGamepad;
     private boolean gamepadConnected;
-    private boolean suppressPointerForGamepad;
     private Control selected;
     private int dragPointer = -1;
     private float dragX, dragY;
@@ -325,11 +324,6 @@ final class RacingControlsView extends View {
         gamepadConnected = connected;
         hiddenByGamepad = connected && !editing;
         releaseAll();
-    }
-
-    void setSuppressPointerForGamepad(boolean suppress) {
-        suppressPointerForGamepad = suppress;
-        if (suppress && gamepadConnected) pointerRelease();
     }
 
     void updateActionKeys(int[] newKeys) {
@@ -1120,7 +1114,6 @@ final class RacingControlsView extends View {
 
     private void pointerTouch(float x, float y, int phase) {
         if (pointer == null || getWidth() == 0 || getHeight() == 0) return;
-        if (suppressPointerForGamepad && gamepadConnected) return;
         if (phase == 1 && Math.abs(x - pointerX) < 2f && Math.abs(y - pointerY) < 2f) return;
         pointerX = x;
         pointerY = y;

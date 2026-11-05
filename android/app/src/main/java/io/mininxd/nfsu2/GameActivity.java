@@ -14,9 +14,6 @@ import android.widget.Toast;
 import android.widget.TextView;
 import android.os.Bundle;
 import android.view.Gravity;
-import android.view.KeyEvent;
-import android.view.MotionEvent;
-import android.view.View;
 import android.view.ViewGroup;
 import android.widget.PopupWindow;
 import android.graphics.Color;
@@ -44,7 +41,6 @@ public final class GameActivity extends NativeActivity {
     private PopupWindow controlsWindow;
     private DiagnosticOverlay diagnosticOverlay;
     private RacingControlsView touchControls;
-    private HandheldGamepadBridge handheldBridge;
     private boolean statusHidden;
     private Runnable statusHideTask;
     private final boolean[] touchKeys=new boolean[256],sentKeys=new boolean[256];
@@ -108,129 +104,57 @@ public final class GameActivity extends NativeActivity {
         @Override public void onInputDeviceChanged(int id) {updateGamepads();}
     };
     /**
-     * Physical gamepads (Bluetooth, USB, or built-in Retroid sticks) drive the game;
-     * the touch layer hides while one is connected.
-     * Only external devices count by default: built-in sensors and side keys of several
-     * MediaTek phones report themselves as joysticks with X/Y axes, and their resting
-     * value used to steer the car by itself. Retroid Pocket built-in pads are accepted
-     * when the device matches handheld heuristics.
+     * Physical gamepads (Bluetooth or USB) drive the game; the touch layer hides while one is connected.
+     * Only external devices count: built-in sensors and side keys of several MediaTek phones report
+     * themselves as joysticks with X/Y axes, and their resting value used to steer the car by itself.
      * Pads in "keyboard" mode report only KEYBOARD but still have gamepad buttons.
      */
-    private static boolean isLikelyFalsePositiveInternalPad(android.view.InputDevice device) {
-        int sources = device.getSources();
-        boolean stick = (sources & android.view.InputDevice.SOURCE_JOYSTICK) == android.view.InputDevice.SOURCE_JOYSTICK
-                && device.getMotionRange(android.view.MotionEvent.AXIS_X) != null
-                && device.getMotionRange(android.view.MotionEvent.AXIS_Y) != null;
-        boolean gamepad = (sources & android.view.InputDevice.SOURCE_GAMEPAD) == android.view.InputDevice.SOURCE_GAMEPAD;
-        boolean hasA = device.hasKeys(android.view.KeyEvent.KEYCODE_BUTTON_A)[0];
-        return !device.isExternal() && stick && !gamepad && !hasA;
-    }
-
-    private static boolean deviceNameLooksRetroid(android.view.InputDevice device) {
-        String name = device.getName() != null ? device.getName().toLowerCase() : "";
-        return name.contains("retroid") || name.contains("pocket");
-    }
-
-    /** Known Retroid vendor id (USB/BT); also accept unnamed built-ins on Retroid hardware. */
-    private static boolean isBuiltInHandheldGamepad(android.view.InputDevice device, android.content.Context context) {
-        if (device.isExternal() || device.isVirtual()) return false;
-        if (isLikelyFalsePositiveInternalPad(device)) return false;
-        if (device.getVendorId() == 0x2e95) return true;
-        if (device.getVendorId() == 0x045e && deviceNameLooksRetroid(device)) return true;
-        if (!GameOptions.isRetroidHandheld(context) && !deviceNameLooksRetroid(device)) return false;
-        int sources = device.getSources();
-        boolean buttons = (sources & android.view.InputDevice.SOURCE_GAMEPAD) == android.view.InputDevice.SOURCE_GAMEPAD;
-        boolean stick = (sources & android.view.InputDevice.SOURCE_JOYSTICK) == android.view.InputDevice.SOURCE_JOYSTICK
-                && device.getMotionRange(android.view.MotionEvent.AXIS_X) != null
-                && device.getMotionRange(android.view.MotionEvent.AXIS_Y) != null;
-        boolean keys = (sources & android.view.InputDevice.SOURCE_KEYBOARD) == android.view.InputDevice.SOURCE_KEYBOARD
-                && device.getKeyboardType() != android.view.InputDevice.KEYBOARD_TYPE_ALPHABETIC
-                && device.hasKeys(android.view.KeyEvent.KEYCODE_BUTTON_A)[0];
-        return buttons || stick || keys;
-    }
-
-    private static boolean countsAsGamepad(android.view.InputDevice device, android.content.Context context) {
-        int sources = device.getSources();
-        boolean buttons = (sources & android.view.InputDevice.SOURCE_GAMEPAD) == android.view.InputDevice.SOURCE_GAMEPAD;
-        boolean stick = (sources & android.view.InputDevice.SOURCE_JOYSTICK) == android.view.InputDevice.SOURCE_JOYSTICK
-                && device.getMotionRange(android.view.MotionEvent.AXIS_X) != null
-                && device.getMotionRange(android.view.MotionEvent.AXIS_Y) != null;
-        boolean keys = (sources & android.view.InputDevice.SOURCE_KEYBOARD) == android.view.InputDevice.SOURCE_KEYBOARD
-                && device.getKeyboardType() != android.view.InputDevice.KEYBOARD_TYPE_ALPHABETIC
-                && device.hasKeys(android.view.KeyEvent.KEYCODE_BUTTON_A)[0];
-        boolean capabilities = buttons || stick || keys;
-        if (!capabilities) return false;
-        if (deviceNameLooksRetroid(device)) return true;
-        if (device.isExternal()) return true;
-        return isBuiltInHandheldGamepad(device, context);
-    }
-
     private void updateGamepads() {
-        boolean connected = false;
-        java.util.ArrayList<Integer> accepted = new java.util.ArrayList<>();
-        StringBuilder seen = new StringBuilder();
-        StringBuilder acceptedNames = new StringBuilder();
-        for (int id : android.view.InputDevice.getDeviceIds()) {
-            android.view.InputDevice device = android.view.InputDevice.getDevice(id);
-            if (device == null || device.isVirtual()) continue;
-            int sources = device.getSources();
-            boolean pad = countsAsGamepad(device, this);
-            seen.append(seen.length() == 0 ? "" : "; ").append(device.getName()).append(" [").append(Integer.toHexString(sources))
-                    .append(device.isExternal() ? " external" : " internal").append(pad ? " pad" : "").append(']');
-            if (pad) {
-                connected = true;
-                accepted.add(id);
-                if (acceptedNames.length() > 0) acceptedNames.append(", ");
-                acceptedNames.append(device.getName()).append(" (#").append(id).append(')');
-            }
+        boolean connected=false;
+        java.util.ArrayList<Integer> accepted=new java.util.ArrayList<>();
+        StringBuilder seen=new StringBuilder();
+        for(int id:android.view.InputDevice.getDeviceIds()) {
+            android.view.InputDevice device=android.view.InputDevice.getDevice(id);
+            if(device==null||device.isVirtual())continue;
+            int sources=device.getSources();
+            boolean buttons=(sources&android.view.InputDevice.SOURCE_GAMEPAD)==android.view.InputDevice.SOURCE_GAMEPAD;
+            // Some fingerprint sensors advertise JOYSTICK with only a Z axis.
+            boolean stick=(sources&android.view.InputDevice.SOURCE_JOYSTICK)==android.view.InputDevice.SOURCE_JOYSTICK&&
+                    device.getMotionRange(android.view.MotionEvent.AXIS_X)!=null&&
+                    device.getMotionRange(android.view.MotionEvent.AXIS_Y)!=null;
+            boolean keys=(sources&android.view.InputDevice.SOURCE_KEYBOARD)==android.view.InputDevice.SOURCE_KEYBOARD&&
+                    device.getKeyboardType()!=android.view.InputDevice.KEYBOARD_TYPE_ALPHABETIC&&
+                    device.hasKeys(android.view.KeyEvent.KEYCODE_BUTTON_A)[0];
+            boolean pad=device.isExternal()&&(buttons||stick||keys);
+            seen.append(seen.length()==0?"":"; ").append(device.getName()).append(" [").append(Integer.toHexString(sources))
+                    .append(device.isExternal()?" external":" internal").append(pad?" pad":"").append(']');
+            if(pad){connected=true;accepted.add(id);}
         }
-        android.util.Log.i("NFS", "Input devices: " + seen);
-        android.util.Log.i("NFS", "Accepted gamepads: " + accepted.size() + (acceptedNames.length() > 0 ? " · " + acceptedNames : ""));
-        if (GameOptions.useJavaHandheldGamepad(this)) {
-            nativeGamepadDevices(new int[0]);
-            nativeGamepadConnected(false);
-            if (handheldBridge != null) {
-                handheldBridge.setPadConnected(connected);
-                handheldBridge.setDeadZone(GameOptions.padStickDeadZone(this));
-            }
-            if (touchControls != null) {
-                touchControls.setGamepadConnected(connected);
-                touchControls.setSuppressPointerForGamepad(connected);
-            }
-            if (connected && touchControls == null) updateHudForGamepad(true);
-            android.util.Log.i("NFS", "Handheld Java gamepad bridge active (native DirectInput gamepad disabled)");
-            return;
-        }
-        int[] ids = new int[accepted.size()];
-        for (int i = 0; i < ids.length; ++i) ids[i] = accepted.get(i);
+        android.util.Log.i("NFS","Input devices: "+seen);
+        // Only these devices may move the guest's stick or press its keys.
+        int[] ids=new int[accepted.size()];for(int i=0;i<ids.length;++i)ids[i]=accepted.get(i);
         nativeGamepadDevices(ids);
-        if (touchControls != null) {
-            touchControls.setGamepadConnected(connected);
-            touchControls.setSuppressPointerForGamepad(connected);
-        }
+        if(touchControls!=null)touchControls.setGamepadConnected(connected);
         nativeGamepadConnected(connected);
-        if (connected && touchControls == null) updateHudForGamepad(true);
     }
     private final Runnable updateControlMode = new Runnable() {
         @Override public void run() {
-            if (!foreground) return;
-            if (touchControls != null) {
-                touchControls.setGameMode(nativeDrivingControls());
-                if (nativeGamepadUsed()) touchControls.gamepadUsed();
-                updateHudForGamepad(touchControls.hiddenByGamepad());
-                if (io.mininxd.nfsu2.net.RoamNativeBridge.isLoaded()) {
-                    try {
-                        int[] actionKeys = io.mininxd.nfsu2.net.RoamNativeBridge.nativeGetActionKeys();
-                        if (actionKeys != null && actionKeys.length >= 11) {
-                            keyLeft = actionKeys[2];
-                            keyRight = actionKeys[3];
-                            touchControls.updateActionKeys(actionKeys);
-                        }
-                    } catch (Throwable ignored) {}
-                }
+            if(!foreground||touchControls==null)return;
+            touchControls.setGameMode(nativeDrivingControls());
+            // Playing on with the pad after a touch revealed the controls hides them again.
+            if(nativeGamepadUsed())touchControls.gamepadUsed();
+            updateHudForGamepad(touchControls.hiddenByGamepad());
+            if (io.mininxd.nfsu2.net.RoamNativeBridge.isLoaded()) {
+                try {
+                    int[] actionKeys = io.mininxd.nfsu2.net.RoamNativeBridge.nativeGetActionKeys();
+                    if (actionKeys != null && actionKeys.length >= 11) {
+                        keyLeft = actionKeys[2];
+                        keyRight = actionKeys[3];
+                        touchControls.updateActionKeys(actionKeys);
+                    }
+                } catch (Throwable ignored) {}
             }
-            View scheduler = touchControls != null ? touchControls : handheldBridge;
-            if (scheduler != null) scheduler.postDelayed(this, 250);
+            touchControls.postDelayed(this,250);
         }
     };
     private static void nativeKey(int scan, boolean down) { com.nfsu2.androidevolved.GameActivity.nativeKey(scan, down); }
@@ -272,10 +196,6 @@ public final class GameActivity extends NativeActivity {
     private static void nativeGamepadLayout(boolean console) {
         try { com.nfsu2.androidevolved.GameActivity.nativeGamepadLayout(console); }
         catch (UnsatisfiedLinkError missing) { android.util.Log.w("NFSU2", "Gamepad layout option needs a newer libnfsu2_android.so"); }
-    }
-    private static void nativeGamepadDeadzone(float zone) {
-        try { com.nfsu2.androidevolved.GameActivity.nativeGamepadDeadzone(zone); }
-        catch (UnsatisfiedLinkError missing) { android.util.Log.w("NFSU2", "Gamepad dead zone needs libnfsu2_android rebuild"); }
     }
     private static void nativeSpeedometerPosition(int position) {
         try { com.nfsu2.androidevolved.GameActivity.nativeSpeedometerPosition(position); }
@@ -351,7 +271,6 @@ public final class GameActivity extends NativeActivity {
     }
     @Override protected void onCreate(Bundle saved) {
         super.onCreate(saved);
-        GameOptions.ensureHandheldDefaults(this);
         GameOptions.syncWidescreenIni(this);
         PerformanceCores.bindToPerformanceCores();
         GameLog.init(this);
@@ -459,8 +378,6 @@ public final class GameActivity extends NativeActivity {
         speedometerPosition = launch.getIntExtra("speedometer", GameOptions.speedometerPosition(this));
         updateHudForGamepad(false);
         nativeGamepadLayout(launch.getBooleanExtra("consolePad", GameOptions.get(this, GameOptions.PAD_LAYOUT).equals("console")));
-        float deadZone = launch.getFloatExtra("padDeadZone", GameOptions.padStickDeadZone(this));
-        nativeGamepadDeadzone(deadZone);
         boolean touchOverlayEnabled = launch.getBooleanExtra("touchOverlay", GameOptions.isTouchOverlayEnabled(this));
         nativeBackBuffers(launch.getIntExtra("backBuffers", Integer.parseInt(GameOptions.get(this, GameOptions.LATENCY))));
         nativeCpuTextures(launch.getBooleanExtra("cpuTextures", GameOptions.get(this, GameOptions.TEXTURES).equals("cpu")));
@@ -494,15 +411,6 @@ public final class GameActivity extends NativeActivity {
             touchControls = null;
             controlsWindow = null;
             updateHudForGamepad(true);
-        }
-        if (GameOptions.useJavaHandheldGamepad(this)) {
-            handheldBridge = new HandheldGamepadBridge(this, new HandheldGamepadBridge.KeySink() {
-                @Override public void setScanKey(int scan, boolean down) { nativeKey(scan, down); }
-                @Override public boolean drivingControls() { return nativeDrivingControls(); }
-            });
-            addContentView(handheldBridge, new ViewGroup.LayoutParams(
-                    ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.MATCH_PARENT));
-            handheldBridge.setDeadZone(deadZone);
         }
         java.util.ArrayList<String> cheats = launch.getStringArrayListExtra("cheats");
         if (cheats == null) cheats = GameOptions.getActiveCheatCodes(this);
@@ -632,9 +540,6 @@ public final class GameActivity extends NativeActivity {
         if (focused && foreground && diagnosticOverlay != null) {
             diagnosticOverlay.show();
         }
-        if (focused && foreground && handheldBridge != null) {
-            handheldBridge.requestFocus();
-        }
     }
     // LAN games announce and discover themselves with UDP broadcasts on port 9999;
     // without this lock many devices drop incoming Wi-Fi broadcasts to save power.
@@ -655,7 +560,6 @@ public final class GameActivity extends NativeActivity {
         updateTiltSensor();
         if(inputManager!=null)inputManager.unregisterInputDeviceListener(gamepadListener);
         if (statusWindow != null) statusWindow.dismiss();
-        if (handheldBridge != null) handheldBridge.releaseAll();
         if (touchControls != null) {touchControls.removeCallbacks(updateControlMode);touchControls.releaseAll();}
         if (controlsWindow != null) controlsWindow.dismiss();
         super.onPause();
@@ -668,7 +572,6 @@ public final class GameActivity extends NativeActivity {
         updateTiltSensor();
         if(inputManager!=null){inputManager.registerInputDeviceListener(gamepadListener,null);updateGamepads();}
         if(touchControls!=null) {touchControls.removeCallbacks(updateControlMode);touchControls.post(updateControlMode);}
-        else if (handheldBridge != null) {handheldBridge.removeCallbacks(updateControlMode);handheldBridge.post(updateControlMode);}
         boolean allowed = Build.VERSION.SDK_INT >= 30
                 ? Environment.isExternalStorageManager()
                 : checkSelfPermission(Manifest.permission.READ_EXTERNAL_STORAGE) == PackageManager.PERMISSION_GRANTED
@@ -718,26 +621,6 @@ public final class GameActivity extends NativeActivity {
         intent.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK | Intent.FLAG_ACTIVITY_CLEAR_TASK);
         startActivity(intent);
         android.os.Process.killProcess(android.os.Process.myPid());
-    }
-
-    @Override
-    public boolean dispatchKeyEvent(KeyEvent event) {
-        if (handheldBridge != null && GameOptions.useJavaHandheldGamepad(this)) {
-            if (event.getAction() == KeyEvent.ACTION_DOWN) {
-                if (handheldBridge.onKeyDown(event.getKeyCode(), event)) return true;
-            } else if (event.getAction() == KeyEvent.ACTION_UP) {
-                if (handheldBridge.onKeyUp(event.getKeyCode(), event)) return true;
-            }
-        }
-        return super.dispatchKeyEvent(event);
-    }
-
-    @Override
-    public boolean dispatchGenericMotionEvent(MotionEvent event) {
-        if (handheldBridge != null && GameOptions.useJavaHandheldGamepad(this)) {
-            if (handheldBridge.onGenericMotionEvent(event)) return true;
-        }
-        return super.dispatchGenericMotionEvent(event);
     }
 
     @Override
